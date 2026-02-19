@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Cardvia · Digital Card</title>
+  <!-- Tailwind CSS v3 + Inter font -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .glass-card {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .fade-in {
+      animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(12px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .btn-shine {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-shine::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+      transform: rotate(45deg);
+      transition: all 0.5s ease;
+      opacity: 0;
+    }
+    .btn-shine:hover::after {
+      opacity: 1;
+      left: 100%;
+    }
+    .hover-lift {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+
+  <div id="root" class="w-full max-w-md mx-auto fade-in"></div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.22.5/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ====== CONFIGURATION (سهل التعديل) ======
+    const CONFIG = {
+      // ---------- البيانات الشخصية ----------
+      fullName: 'Kartar Lamie',
+      jobTitle: 'Founder of Karas Fashion',
+      arabicTitle: 'صاحب و مدير سلسلة كاراس فاشون',
+      bio: '',
+
+      // ---------- الصور ----------
+      profileImage: 'https://ik.imagekit.io/fojb8puzo/Screenshot%202026-02-19%20202709.png',
+      profileImageSize: 'w-36 h-36 sm:w-48 sm:h-48',
+      coverImage: 'https://ik.imagekit.io/fojb8puzo/pexels-simon73-1323550.jpg',
+
+      // ---------- العلامة التجارية (الشعار الجديد) ----------
+      brand: {
+        logoUrl: 'https://ik.imagekit.io/fojb8puzo/Screenshot_2026-02-19_201805-removebg-preview.png', // رابط الشعار
+        logoAlt: 'Cardvia Logo',
+        logoSize: 'h-16 sm:h-20', // حجم الشعار (ارتفاع)
+      },
+
+      // ---------- أزرار التواصل (5 أزرار) ----------
+      contacts: [
+        { icon: 'fa-solid fa-phone', label: 'Call', url: 'tel:+201022777725' },
+        { icon: 'fa-brands fa-whatsapp', label: 'WhatsApp', url: 'https://wa.me/+201022777725' },
+        { icon: 'fa-regular fa-envelope', label: 'Email', url: 'mailto:info@karasfashion.com' },
+        { icon: 'fa-brands fa-facebook', url: 'https://www.facebook.com/kartar.lamie', label: 'Facebook' }
+      ],
+
+
+      // ---------- رمز QR (صورة) ----------
+      qrCodeImageUrl: 'https://ik.imagekit.io/fojb8puzo/%D8%AA%D8%B5%D9%85%D9%8A%D9%85_%D8%A8%D8%AF%D9%88%D9%86_%D8%B9%D9%86%D9%88%D8%A7%D9%86-removebg-preview%20(1).png',
+
+      // ---------- الألوان الأساسية ----------
+      colors: {
+        primary: '#e6c318',   // البنفسجي المميز
+        secondary: '#9ca3af',
+        accent: '#a78bfa',
+      },
+
+      // ---------- بيانات vCard ----------
+      vCard: {
+        fn: 'Mark Atef',
+        org: '',
+        title: '',
+        tel: '+201140567825',
+        email: 'markatef219@gmail.com',
+        url: 'https://card1-iota.vercel.app/'
+      },
+
+      // ---------- رقم واتساب لطلب البطاقة (غيّره لما تحدد الرقم) ----------
+      whatsappRequestNumber: '201140567825', // ضع الرقم هنا بعدين
+    };
+
+    // تتبع النقرات (Google Analytics)
+    const trackClick = (label) => {
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'button_click', { event_category: 'engagement', event_label: label });
+      }
+    };
+
+    // تحميل vCard
+    const downloadVcard = () => {
+      trackClick('download_vcard');
+      const vcard = `BEGIN:VCARD
+VERSION:3.0
+FN:${CONFIG.vCard.fn || CONFIG.fullName}
+ORG:${CONFIG.vCard.org}
+TITLE:${CONFIG.vCard.title}
+TEL:${CONFIG.vCard.tel}
+EMAIL:${CONFIG.vCard.email}
+URL:${CONFIG.vCard.url}
+END:VCARD`;
+      const blob = new Blob([vcard], { type: 'text/vcard' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${CONFIG.fullName.replace(/\s+/g, '_')}.vcf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    // توليد QR وهمي للتحميل
+    const downloadQR = () => {
+      trackClick('download_qr');
+      const canvas = document.createElement('canvas');
+      canvas.width = 200;
+      canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 200, 200);
+      ctx.fillStyle = '#000000';
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if ((i + j) % 2 === 0) {
+            ctx.fillRect(i * 25, j * 25, 20, 20);
+          }
+        }
+      }
+      ctx.fillRect(10, 10, 40, 40);
+      ctx.fillRect(150, 10, 40, 40);
+      ctx.fillRect(10, 150, 40, 40);
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${CONFIG.fullName.replace(/\s+/g, '_')}_QR.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    };
+
+    // مكون الكارد
+    function DigitalBusinessCard() {
+      return (
+        <div className="glass-card rounded-3xl shadow-2xl overflow-hidden border border-white/10 transition-all duration-500">
+          {/* الشعار العلوي (صورة) */}
+          <div className="pt-6 px-5 flex justify-center">
+            <img 
+              src={CONFIG.brand.logoUrl} 
+              alt={CONFIG.brand.logoAlt}
+              className={`${CONFIG.brand.logoSize} w-auto object-contain`}
+              onError={(e) => e.target.style.display = 'none'}
+            />
+          </div>
+
+          {/* الغلاف */}
+          <div className="relative h-48 sm:h-56 mt-2 bg-cover bg-center" style={{ backgroundImage: `url('${CONFIG.coverImage}')` }}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+            {/* الصورة الشخصية */}
+            <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
+              <div className={`${CONFIG.profileImageSize} rounded-full border-4 border-white/20 shadow-2xl overflow-hidden bg-black`}>
+                <img 
+                  src={CONFIG.profileImage} 
+                  alt={CONFIG.fullName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => e.target.src = 'https://via.placeholder.com/400?text=Profile'}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* المحتوى الرئيسي */}
+          <div className="pt-16 sm:pt-20 pb-6 px-5 sm:px-6 space-y-6">
+            {/* الاسم + المسمى */}
+            <div className="text-center space-y-1">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
+                {CONFIG.fullName}
+              </h1>
+              <h2 className="text-lg sm:text-xl font-medium text-gray-300">{CONFIG.jobTitle}</h2>
+              <p className="text-base sm:text-lg text-gray-400 font-medium" dir="rtl">{CONFIG.arabicTitle}</p>
+            </div>
+
+            {/* السيرة المختصرة */}
+            <p className="text-center text-gray-300 text-[15px] leading-relaxed px-2">
+              {CONFIG.bio}
+            </p>
+
+            {/* أزرار التواصل (3) - كلها بلون العلامة التجارية */}
+            <div className="grid grid-cols-1 gap-3">
+              {CONFIG.contacts.map((btn, idx) => (
+                <a
+                  key={idx}
+                  href={btn.url}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-4 bg-white/5 border border-white/10 px-5 py-4 rounded-xl font-medium text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98] btn-shine"
+                  onClick={() => trackClick(`contact_${btn.label}`)}
+                  aria-label={btn.label}
+                >
+                  <i className={`${btn.icon} text-2xl w-8`} style={{ color: CONFIG.colors.primary }}></i>
+                  <span className="flex-1 text-left">{btn.label}</span>
+                  <i className="fa-solid fa-chevron-left text-sm opacity-50"></i>
+                </a>
+              ))}
+            </div>
+
+
+            {/* رمز QR + تحميل */}
+            <div className="flex flex-col items-center gap-6 pt-4">
+              {/* vCard - بدون السطر الإضافي (تمت إزالته) */}
+              <div className="w-full space-y-3">
+                <button
+                  onClick={downloadVcard}
+                  className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all btn-shine"
+                  style={{ background: CONFIG.colors.primary, color: 'black' }}
+                  aria-label="Download vCard"
+                >
+                  <i className="fa-solid fa-address-card text-xl"></i>
+                  <span>Download vCard</span>
+                </button>
+                {/* السطر اللي كان بيظهر FN و ORG اتشال بناء على طلبك */}
+              </div>
+
+              {/* زر طلب البطاقة عبر واتساب - نفس حجم زر vCard */}
+              <div className="w-full space-y-3">
+                <a
+                  href={`https://wa.me/${CONFIG.whatsappRequestNumber}`}
+                  target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackClick('request_card_whatsapp')}
+                  className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all btn-shine"
+                  style={{ background: CONFIG.colors.primary, color: 'black' }}
+                >
+                  <i className="fa-regular fa-id-card text-xl"></i>
+                  <span>Request Your Card</span>
+                </a>
+              </div>
+            </div>
+
+            {/* التذييل */}
+            <div className="pt-6 text-center">
+              <span className="text-[0.7rem] font-medium tracking-[0.2em] text-gray-600">
+                POWERED BY CARDVIA
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<DigitalBusinessCard />);
+  </script>
+</body>
+</html>
