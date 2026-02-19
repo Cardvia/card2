@@ -93,13 +93,12 @@
         { icon: 'fa-brands fa-facebook', url: 'https://www.facebook.com/kartar.lamie', label: 'Facebook' }
       ],
 
-
       // ---------- رمز QR (صورة) ----------
-      qrCodeImageUrl: 'https://ik.imagekit.io/fojb8puzo/%D8%AA%D8%B5%D9%85%D9%8A%D9%85_%D8%A8%D8%AF%D9%88%D9%86_%D8%B9%D9%86%D9%88%D8%A7%D9%86-removebg-preview%20(2).png',
+      qrCodeImageUrl: 'https://ik.imagekit.io/fojb8puzo/qr-code__8_-removebg-preview.png',
 
       // ---------- الألوان الأساسية ----------
       colors: {
-        primary: '#e6c318',   // البنفسجي المميز
+        primary: '#e6c318',   // الذهبي
         secondary: '#9ca3af',
         accent: '#a78bfa',
       },
@@ -148,36 +147,50 @@ END:VCARD`;
       URL.revokeObjectURL(url);
     };
 
-    // توليد QR وهمي للتحميل
+    // توليد QR وتحميله
     const downloadQR = () => {
       trackClick('download_qr');
-      const canvas = document.createElement('canvas');
-      canvas.width = 200;
-      canvas.height = 200;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 200, 200);
-      ctx.fillStyle = '#000000';
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          if ((i + j) % 2 === 0) {
-            ctx.fillRect(i * 25, j * 25, 20, 20);
-          }
-        }
-      }
-      ctx.fillRect(10, 10, 40, 40);
-      ctx.fillRect(150, 10, 40, 40);
-      ctx.fillRect(10, 150, 40, 40);
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
+      
+      // إذا كان هناك رابط صورة QR حقيقي، استخدمه
+      if (CONFIG.qrCodeImageUrl) {
         const a = document.createElement('a');
-        a.href = url;
+        a.href = CONFIG.qrCodeImageUrl;
         a.download = `${CONFIG.fullName.replace(/\s+/g, '_')}_QR.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 'image/png');
+      } else {
+        // إذا لم يكن هناك رابط، أنشئ QR وهمي
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 200, 200);
+        ctx.fillStyle = '#000000';
+        // رسم نمط QR وهمي بسيط
+        for (let i = 0; i < 8; i++) {
+          for (let j = 0; j < 8; j++) {
+            if ((i + j) % 2 === 0) {
+              ctx.fillRect(i * 25, j * 25, 20, 20);
+            }
+          }
+        }
+        ctx.fillRect(10, 10, 40, 40);
+        ctx.fillRect(150, 10, 40, 40);
+        ctx.fillRect(10, 150, 40, 40);
+        
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${CONFIG.fullName.replace(/\s+/g, '_')}_QR.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      }
     };
 
     // مكون الكارد
@@ -222,11 +235,13 @@ END:VCARD`;
             </div>
 
             {/* السيرة المختصرة */}
-            <p className="text-center text-gray-300 text-[15px] leading-relaxed px-2">
-              {CONFIG.bio}
-            </p>
+            {CONFIG.bio && (
+              <p className="text-center text-gray-300 text-[15px] leading-relaxed px-2">
+                {CONFIG.bio}
+              </p>
+            )}
 
-            {/* أزرار التواصل (3) - كلها بلون العلامة التجارية */}
+            {/* أزرار التواصل */}
             <div className="grid grid-cols-1 gap-3">
               {CONFIG.contacts.map((btn, idx) => (
                 <a
@@ -244,10 +259,27 @@ END:VCARD`;
               ))}
             </div>
 
+            {/* رمز QR - تمت الإضافة هنا */}
+            {CONFIG.qrCodeImageUrl && (
+              <div className="flex justify-center pt-2">
+                <div className="relative group cursor-pointer" onClick={downloadQR}>
+                  <div className="w-32 h-32 bg-white rounded-2xl p-2 shadow-xl hover:scale-105 transition-transform duration-300">
+                    <img 
+                      src={CONFIG.qrCodeImageUrl} 
+                      alt="QR Code"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-center text-xs text-gray-400 mt-2 group-hover:text-gray-300 transition-colors">
+                    اضغط لتحميل QR
+                  </p>
+                </div>
+              </div>
+            )}
 
-            {/* رمز QR + تحميل */}
+            {/* أزرار التحميل */}
             <div className="flex flex-col items-center gap-6 pt-4">
-              {/* vCard - بدون السطر الإضافي (تمت إزالته) */}
+              {/* vCard */}
               <div className="w-full space-y-3">
                 <button
                   onClick={downloadVcard}
@@ -258,10 +290,9 @@ END:VCARD`;
                   <i className="fa-solid fa-address-card text-xl"></i>
                   <span>Download vCard</span>
                 </button>
-                {/* السطر اللي كان بيظهر FN و ORG اتشال بناء على طلبك */}
               </div>
 
-              {/* زر طلب البطاقة عبر واتساب - نفس حجم زر vCard */}
+              {/* زر طلب البطاقة عبر واتساب */}
               <div className="w-full space-y-3">
                 <a
                   href={`https://wa.me/${CONFIG.whatsappRequestNumber}`}
